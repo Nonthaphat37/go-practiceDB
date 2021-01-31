@@ -2,6 +2,7 @@ package main
 
 import (
 	// "fmt"
+	"time"
 	"encoding/json"
 	"strconv"
 	"database/sql"
@@ -18,7 +19,6 @@ const (
 	getUserCommand = "SELECT firstname, lastname FROM users WHERE id=$1";
 	createUserCommand = "INSERT INTO users(id, firstname, lastname) VALUES($1, $2, $3) RETURNING id";
 	updateUserCommand = "UPDATE users SET firstname=$1, lastname=$2 WHERE id=$3";
-	CACHE_TTL = 0;
 )
 
 func (u *user) getUserRedis(Redis *redis.Client) (string, error){
@@ -31,9 +31,9 @@ func (u *user) delUserRedis(Redis *redis.Client) error{
 	return err;
 }
 
-func (u *user) setUserRedis(Redis *redis.Client) error{
+func (u *user) setUserRedis(Redis *redis.Client, cache_ttl time.Duration) error{
 	json, _ := json.Marshal(u)
-	err := Redis.Set(strconv.Itoa(u.ID), json, CACHE_TTL).Err()
+	err := Redis.Set(strconv.Itoa(u.ID), json, cache_ttl).Err()
 	return err;
 }
 

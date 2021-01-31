@@ -11,11 +11,13 @@ import (
 
 	"github.com/gorilla/mux"
   _ "github.com/lib/pq"
+	"github.com/go-redis/redis"
 )
 
 type App struct{
 	Router *mux.Router
 	DB     *sql.DB
+	Redis  *redis.Client
 }
 
 func (a *App) initializeRoutes(){
@@ -29,23 +31,32 @@ func (a *App) Initialize(user, password, dbName string){
 	if err != nil {
 		log.Fatal(err);
 	}
-	
+
 	a.Router = mux.NewRouter();
+
+	a.Redis = redis.NewClient(&redis.Options{
+		Addr: "localhost:6379",
+		Password: "",
+		DB: 0,
+	})
+
+	pong, err := a.Redis.Ping().Result()
+	fmt.Println(pong, err)
 
 	a.initializeRoutes();
 }
 
-func respondWithError(w http.ResponseWriter, code int, message string) {
-    respondWithJSON(w, code, map[string]string{"error": message})
+func respondWithError(w http.ResponseWriter, code int, message string){
+	respondWithJSON(w, code, map[string]string{"error": message})
 }
 
-func respondWithJSON(w http.ResponseWriter, code int, payload interface{}) {
+func respondWithJSON(w http.ResponseWriter, code int, payload interface{}){
 	response, _ := json.Marshal(payload)
 	
 	fmt.Println(payload, string(response));
 
-    w.Header().Set("Content-Type", "application/json")
-    w.WriteHeader(code)
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(code)
 	w.Write(response)
 }
 
@@ -55,22 +66,29 @@ func (a *App) getUser(w http.ResponseWriter, r *http.Request){
 	if err != nil {
 		fmt.Println(err);
 		respondWithError(w, http.StatusBadRequest, "Invalid User ID");
-        return
+		return;
 	}
 
 	defer r.Body.Close()
 
 	u := user{ID: id};
 
-	if err := u.getUser(a.DB); err != nil {
-		if err == sql.ErrNoRows {
-			respondWithError(w, http.StatusNotFound, "Not Found");
+	if val, err := u.getUserRedis(a.Redis); err != redis.Nil {
+		data := user{};
+		json.Unmarshal([]byte(val), &data)
+		fmt.Println(data)
+		respondWithJSON(w, http.StatusOK, data);
+	} else{
+		if err := u.getUserDB(a.DB); err != nil {
+			if err == sql.ErrNoRows {
+				respondWithError(w, http.StatusNotFound, "Not Found");
+			} else{
+				respondWithError(w, http.StatusInternalServerError, err.Error());
+			}
 		} else{
-			respondWithError(w, http.StatusInternalServerError, err.Error())
+			respondWithJSON(w, http.StatusOK, u);
 		}
-		return;
 	}
-	respondWithJSON(w, http.StatusOK, u)
 }
 
 

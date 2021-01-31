@@ -1,7 +1,9 @@
 package main
 
 import (
+	"strconv"
 	"database/sql"
+	"github.com/go-redis/redis"
 )
 
 type user struct {
@@ -11,10 +13,15 @@ type user struct {
 }
 
 const (
-	querySql = "SELECT firstname, lastname FROM users WHERE id=$1";
+	getUserCommand = "SELECT firstname, lastname FROM users WHERE id=$1";
 )
 
-func (u *user) getUser(db *sql.DB) error{
-	err := db.QueryRow(querySql, u.ID).Scan(&u.Firstname, &u.Lastname);
+func (u *user) getUserRedis(Redis *redis.Client) (string, error){
+	val, err := Redis.Get(strconv.Itoa(u.ID)).Result()
+	return val, err
+}
+
+func (u *user) getUserDB(db *sql.DB) error{
+	err := db.QueryRow(getUserCommand, u.ID).Scan(&u.Firstname, &u.Lastname);
 	return err;
 }

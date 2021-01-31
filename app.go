@@ -5,6 +5,7 @@ import (
 	"log"
 	"fmt"
 	"strconv"
+	"strings"
 
 	"net/http"
 	"encoding/json"
@@ -107,13 +108,21 @@ func (a *App) createUser(w http.ResponseWriter, r *http.Request){
 	decoder := json.NewDecoder(r.Body);
 	if err := decoder.Decode(&u); err != nil {
 		fmt.Println(err);
-		respondWithError(w, http.StatusBadRequest, "Invalid request payload");
+		respondWithError(w, http.StatusBadRequest, "Invalid request payload.");
 		return;
 	}
 	defer r.Body.Close();
 
-	fmt.Println(u);
+	if(u.Firstname == "" || u.Lastname == ""){
+		fmt.Println("Invalid request payload: Name must be not empty.");
+		respondWithError(w, http.StatusBadRequest, "Invalid request payload: Name must be not empty.");
+		return;
+	}
+
+	u.Firstname = strings.TrimSpace(u.Firstname);
+	u.Lastname = strings.TrimSpace(u.Lastname);
 	tmp := u;
+
 	fmt.Println("Post Method");
 	if err := u.getUserDB(a.DB); err != nil {
 		if err == sql.ErrNoRows {

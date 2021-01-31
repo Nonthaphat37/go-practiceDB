@@ -106,13 +106,15 @@ func (a *App) createUser(w http.ResponseWriter, r *http.Request){
 	var u user;
 	decoder := json.NewDecoder(r.Body);
 	if err := decoder.Decode(&u); err != nil {
+		fmt.Println(err);
 		respondWithError(w, http.StatusBadRequest, "Invalid request payload");
 		return;
 	}
 	defer r.Body.Close();
 
+	fmt.Println(u);
 	tmp := u;
-	fmt.Println("Post Mathod");
+	fmt.Println("Post Method");
 	if err := u.getUserDB(a.DB); err != nil {
 		if err == sql.ErrNoRows {
 			if err := u.createUser(a.DB); err != nil {

@@ -33,7 +33,6 @@ func (a *App) Initialize(user, password, dbName string){
 	a.Router = mux.NewRouter();
 
 	a.initializeRoutes();
-	fmt.Println(user, password, dbName);
 }
 
 func respondWithError(w http.ResponseWriter, code int, message string) {
@@ -41,24 +40,27 @@ func respondWithError(w http.ResponseWriter, code int, message string) {
 }
 
 func respondWithJSON(w http.ResponseWriter, code int, payload interface{}) {
-    response, _ := json.Marshal(payload)
+	response, _ := json.Marshal(payload)
+	
+	fmt.Println(payload, string(response));
 
     w.Header().Set("Content-Type", "application/json")
     w.WriteHeader(code)
-    w.Write(response)
+	w.Write(response)
 }
 
 func (a *App) getUser(w http.ResponseWriter, r *http.Request){
 	vars := mux.Vars(r);
-    fmt.Println("asbsaf")
 	id, err := strconv.Atoi(vars["id"]);
 	if err != nil {
 		fmt.Println(err);
 		respondWithError(w, http.StatusBadRequest, "Invalid User ID");
         return
 	}
-	
-	u := user{id: id};
+
+	defer r.Body.Close()
+
+	u := user{ID: id};
 
 	if err := u.getUser(a.DB); err != nil {
 		if err == sql.ErrNoRows {
@@ -66,9 +68,9 @@ func (a *App) getUser(w http.ResponseWriter, r *http.Request){
 		} else{
 			respondWithError(w, http.StatusInternalServerError, err.Error())
 		}
-	} else{
-		respondWithJSON(w, http.StatusOK, u)
+		return;
 	}
+	respondWithJSON(w, http.StatusOK, u)
 }
 
 

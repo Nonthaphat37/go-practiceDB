@@ -1,18 +1,20 @@
 package main
 
 import (
-	"fmt"
-	"errors"
 	"database/sql"
 )
 
 type user struct {
-	id          int     `json:"id"`
-	firstname   string  `json:"firstname"`
-	lastname    string  `json:"lastname"`
+	ID        int    `json:"id"`
+	Firstname string `json:"firstname"`
+	Lastname  string `json:"lastname"`
 }
 
+const (
+	querySql = "SELECT firstname, lastname FROM users WHERE id=$1";
+)
+
 func (u *user) getUser(db *sql.DB) error{
-	fmt.Println("abc");
-	return errors.New("abc");
+	err := db.QueryRow(querySql, u.ID).Scan(&u.Firstname, &u.Lastname);
+	return err;
 }

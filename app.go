@@ -20,12 +20,12 @@ type App struct{
 	Router    *mux.Router
 	DB        *sql.DB
 	Redis     *redis.Client
-	cache_ttl time.Duration 
+	cache_ttl time.Duration
 }
 
 func (a *App) initializeRoutes(){
 	a.Router.HandleFunc("/user/{id:[0-9]+}", a.getUser).Methods("GET");
-	a.Router.HandleFunc("/user", a.createUser).Methods("POST")
+	a.Router.HandleFunc("/user", a.createUser).Methods("POST");
 }
 
 func (a *App) Initialize(dbUser, dbPassword, dbName, redisAddr, redisPassword, redisDB, cache_ttl string){
@@ -43,11 +43,10 @@ func (a *App) Initialize(dbUser, dbPassword, dbName, redisAddr, redisPassword, r
 		Addr: redisAddr,
 		Password: redisPassword,
 		DB: redisDB2,
-	})
+	});
 
 	ttl, _ := strconv.Atoi(cache_ttl);
 	a.cache_ttl = time.Duration(ttl) * time.Millisecond;
-	fmt.Println(a.cache_ttl, ttl, cache_ttl);
 
 	pong, err := a.Redis.Ping().Result();
 	fmt.Println("Test ping redis", pong, err);
@@ -56,29 +55,27 @@ func (a *App) Initialize(dbUser, dbPassword, dbName, redisAddr, redisPassword, r
 }
 
 func respondWithError(w http.ResponseWriter, code int, message string){
-	respondWithJSON(w, code, map[string]string{"error": message})
+	respondWithJSON(w, code, map[string]string{"error": message});
 }
 
 func respondWithJSON(w http.ResponseWriter, code int, payload interface{}){
-	response, _ := json.Marshal(payload)
+	response, _ := json.Marshal(payload);
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(code)
-	w.Write(response)
+	w.Header().Set("Content-Type", "application/json");
+	w.WriteHeader(code);
+	w.Write(response);
 }
 
 func (a *App) getUser(w http.ResponseWriter, r *http.Request){
 	vars := mux.Vars(r);
 
 	id := fmt.Sprintf("%05s", vars["id"]);
-	fmt.Println(id);
 	
 	// id, err := strconv.Atoi(vars["id"]);
 	// if err != nil {
 	// 	respondWithError(w, http.StatusBadRequest, "Invalid User ID");
 	// 	return;
 	// }
-	defer r.Body.Close()
 
 	u := user{ID: id};
 
@@ -86,8 +83,8 @@ func (a *App) getUser(w http.ResponseWriter, r *http.Request){
 	if val, err := u.getUserRedis(a.Redis); err != redis.Nil {
 		fmt.Println("Get user from redis");
 
-		ttl, _ := a.Redis.TTL(u.ID).Result()
-	    fmt.Printf("%v\n", ttl)
+		ttl, _ := a.Redis.TTL(u.ID).Result();
+	    fmt.Printf("%v\n", ttl);
 
 		data := user{};
 		json.Unmarshal([]byte(val), &data);

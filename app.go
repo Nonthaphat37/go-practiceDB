@@ -47,6 +47,7 @@ func (a *App) Initialize(dbUser, dbPassword, dbName, redisAddr, redisPassword, r
 
 	ttl, _ := strconv.Atoi(cache_ttl);
 	a.cache_ttl = time.Duration(ttl) * time.Millisecond;
+	fmt.Println(a.cache_ttl, ttl, cache_ttl);
 
 	pong, err := a.Redis.Ping().Result();
 	fmt.Println("Test ping redis", pong, err);
@@ -84,6 +85,10 @@ func (a *App) getUser(w http.ResponseWriter, r *http.Request){
 	fmt.Println("Get Method");
 	if val, err := u.getUserRedis(a.Redis); err != redis.Nil {
 		fmt.Println("Get user from redis");
+
+		ttl, _ := a.Redis.TTL(u.ID).Result()
+	    fmt.Printf("%v\n", ttl)
+
 		data := user{};
 		json.Unmarshal([]byte(val), &data);
 		respondWithJSON(w, http.StatusOK, data);

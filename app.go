@@ -84,7 +84,7 @@ func (a *App) getUser(w http.ResponseWriter, r *http.Request){
 		fmt.Println("Get user from redis");
 
 		ttl, _ := a.Redis.TTL(u.ID).Result();
-	    fmt.Printf("%v\n", ttl);
+	    fmt.Printf("time to live of data : %v\n", ttl);
 
 		data := user{};
 		json.Unmarshal([]byte(val), &data);

@@ -1,4 +1,4 @@
-// this program is not cover all the cases;
+// this code is not cover all the cases;
 
 package main
 
@@ -7,7 +7,6 @@ import (
 	"testing"
 	"log"
 
-	"fmt"
 	"encoding/json"
 
 	"github.com/joho/godotenv"
@@ -47,7 +46,6 @@ func TestMain(m *testing.M){
 
 func ensureTableExist(){
 	if _, err := a.DB.Exec(tableCreationQuery); err != nil {
-		fmt.Println(err);
 		log.Fatal(err);
 	}
 }

@@ -1,3 +1,5 @@
+// this program is not cover all the cases;
+
 package main
 
 import (
@@ -11,6 +13,7 @@ import (
 	"github.com/joho/godotenv"
 	"net/http"
 	"net/http/httptest"
+	"bytes"
 )
 
 const tableCreationQuery = `CREATE TABLE IF NOT EXISTS users
@@ -65,17 +68,75 @@ func clearTable(){
 	a.DB.Exec("DELETE FROM users");
 }
 
-func TestGetNonExistUser(t *testing.T){
+func TestCreateUser(t *testing.T){
 	clearTable();
+	var jsonStr = []byte(`{"id" : "00001", "firstname" : "nonthaphat", "lastname" : "wongwattanakij"}`);
+	req, _ := http.NewRequest("POST", "/user", bytes.NewBuffer(jsonStr));
+	req.Header.Set("Content-Type", "application/json");
+
+	response := executeRequest(req);
+	checkResponseCode(t, http.StatusCreated, response.Code);
+
+	var m map[string]interface{};
+	json.Unmarshal(response.Body.Bytes(), &m);
+	
+	if m["id"] != "00001" {
+		t.Errorf("Expected id name to be '00001'. Got ‘%v’", m["id"]);
+	}
+
+	if m["firstname"] != "nonthaphat" {
+		t.Errorf("Expected firstname to be 'nonthaphat'. Got ‘%v’", m["firstname"]);
+	}
+
+	if m["lastname"] != "wongwattanakij" {
+		t.Errorf("Expected lastname to be 'wongwattanakij'. Got ‘%v’", m["lastname"]);
+	}
+}
+
+func addUser(id, firstname, lastname string){
+	a.DB.Exec("INSERT INTO users(id, firstname, lastname) VALUES($1, $2, $3) RETURNING id", id, firstname, lastname);
+}
+
+func TestGetUser(t *testing.T){
+	clearTable();
+	addUser("00001", "nonthaphat", "wongwattanakij");
 
 	req, _ := http.NewRequest("GET", "/user/1", nil);
 	response := executeRequest(req);
-	
-	checkResponseCode(t, http.StatusNotFound, response.Code);
 
-	var m map[string]string;
+	checkResponseCode(t, http.StatusOK, response.Code);
+}
+
+func TestUpdateUser(t *testing.T){
+	clearTable();
+	addUser("00001", "nonthaphat", "wongwattanakij");
+
+	req, _ := http.NewRequest("GET", "/user/1", nil);
+	response := executeRequest(req);
+
+	var originalUser map[string]interface{};
+	json.Unmarshal(response.Body.Bytes(), &originalUser);
+
+	var jsonStr = []byte(`{"id" : "00001", "firstname" : "nonthaphat2", "lastname" : "wongwattanakij2"}`);
+	req, _ = http.NewRequest("POST", "/user", bytes.NewBuffer(jsonStr));
+	req.Header.Set("Content-Type", "application/json");
+
+	response = executeRequest(req);
+
+	checkResponseCode(t, http.StatusOK, response.Code);
+
+	var m map[string]interface{};
 	json.Unmarshal(response.Body.Bytes(), &m);
-	if m["error"] != "Not Found" {
-		t.Errorf("Expected the 'error' key of the response to be set to 'Not Found'. Got '%s'", m["error"]);
+
+	if m["id"] != originalUser["id"] {
+        t.Errorf("Expected the id to remain the same (%v). Got %v", originalUser["id"], m["id"]);
 	}
+
+	if m["firstname"] == originalUser["firstname"] {
+        t.Errorf("Expected the firstname to change from '%v' to '%v'. Got '%v'", originalUser["firstname"], m["firstname"], m["firstname"]);
+    }
+
+    if m["lastname"] == originalUser["lastname"] {
+        t.Errorf("Expected the lastname to change from '%v' to '%v'. Got '%v'", originalUser["lastname"], m["lastname"], m["lastname"]);
+    }
 }

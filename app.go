@@ -48,7 +48,7 @@ func (a *App) Initialize(dbUser, dbPassword, dbName, redisAddr, redisPassword, r
 	ttl, _ := strconv.Atoi(cache_ttl);
 	a.cache_ttl = time.Duration(ttl) * time.Millisecond;
 
-	pong, err := a.Redis.Ping().Result()
+	pong, err := a.Redis.Ping().Result();
 	fmt.Println("Test ping redis", pong, err);
 
 	a.initializeRoutes();
@@ -68,11 +68,15 @@ func respondWithJSON(w http.ResponseWriter, code int, payload interface{}){
 
 func (a *App) getUser(w http.ResponseWriter, r *http.Request){
 	vars := mux.Vars(r);
-	id, err := strconv.Atoi(vars["id"]);
-	if err != nil {
-		respondWithError(w, http.StatusBadRequest, "Invalid User ID");
-		return;
-	}
+
+	id := fmt.Sprintf("%05s", vars["id"]);
+	fmt.Println(id);
+	
+	// id, err := strconv.Atoi(vars["id"]);
+	// if err != nil {
+	// 	respondWithError(w, http.StatusBadRequest, "Invalid User ID");
+	// 	return;
+	// }
 	defer r.Body.Close()
 
 	u := user{ID: id};
@@ -86,6 +90,7 @@ func (a *App) getUser(w http.ResponseWriter, r *http.Request){
 	} else{
 		if err := u.getUserDB(a.DB); err != nil {
 			if err == sql.ErrNoRows {
+				fmt.Println("Not Found");
 				respondWithError(w, http.StatusNotFound, "Not Found");
 			} else{
 				respondWithError(w, http.StatusInternalServerError, err.Error());
@@ -121,6 +126,7 @@ func (a *App) createUser(w http.ResponseWriter, r *http.Request){
 
 	u.Firstname = strings.TrimSpace(u.Firstname);
 	u.Lastname = strings.TrimSpace(u.Lastname);
+	u.ID = fmt.Sprintf("%05s", u.ID);
 	tmp := u;
 
 	fmt.Println("Post Method");

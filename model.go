@@ -4,13 +4,12 @@ import (
 	// "fmt"
 	"time"
 	"encoding/json"
-	"strconv"
 	"database/sql"
 	"github.com/go-redis/redis"
 )
 
 type user struct {
-	ID        int    `json:"id"`
+	ID        string `json:"id"`
 	Firstname string `json:"firstname"`
 	Lastname  string `json:"lastname"`
 }
@@ -22,18 +21,18 @@ const (
 )
 
 func (u *user) getUserRedis(Redis *redis.Client) (string, error){
-	val, err := Redis.Get(strconv.Itoa(u.ID)).Result()
+	val, err := Redis.Get(u.ID).Result()
 	return val, err
 }
 
 func (u *user) delUserRedis(Redis *redis.Client) error{
-	err := Redis.Del(strconv.Itoa(u.ID)).Err();
+	err := Redis.Del(u.ID).Err();
 	return err;
 }
 
 func (u *user) setUserRedis(Redis *redis.Client, cache_ttl time.Duration) error{
 	json, _ := json.Marshal(u)
-	err := Redis.Set(strconv.Itoa(u.ID), json, cache_ttl).Err()
+	err := Redis.Set(u.ID, json, cache_ttl).Err()
 	return err;
 }
 
